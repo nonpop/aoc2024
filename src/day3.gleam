@@ -21,5 +21,27 @@ fn operands(match: regexp.Match) {
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  let assert Ok(re) =
+    regexp.from_string("do\\(\\)|don't\\(\\)|mul\\((\\d{1,3}),(\\d{1,3})\\)")
+  let memory = string.concat(lines)
+
+  regexp.scan(re, memory)
+  |> list.fold(from: #(True, 0), with: step)
+  |> fn(state) { state.1 }
+}
+
+fn step(state, match: regexp.Match) {
+  let #(enabled, acc) = state
+  case match.content {
+    "do()" -> #(True, acc)
+    "don't()" -> #(False, acc)
+    _ ->
+      case enabled {
+        False -> state
+        True -> {
+          let #(d1, d2) = operands(match)
+          #(True, acc + d1 * d2)
+        }
+      }
+  }
 }
