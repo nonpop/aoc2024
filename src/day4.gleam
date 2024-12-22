@@ -8,7 +8,8 @@ pub fn solve1(lines: List(String)) -> Int {
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  parse(lines)
+  |> count_x_mas(0, 0, 0)
 }
 
 fn parse(lines) {
@@ -65,5 +66,48 @@ fn has_char_at(matrix, row_idx, col_idx, char) {
         Error(Nil) -> False
         Ok(c) -> c == char
       }
+  }
+}
+
+fn count_x_mas(matrix, acc, row_idx, col_idx) {
+  case glearray.get(matrix, row_idx) {
+    Error(Nil) -> acc
+    Ok(row) ->
+      case glearray.get(row, col_idx) {
+        Error(Nil) -> count_x_mas(matrix, acc, row_idx + 1, 0)
+        Ok("A") ->
+          count_x_mas(
+            matrix,
+            acc + count_x_mas_at(matrix, row_idx, col_idx),
+            row_idx,
+            col_idx + 1,
+          )
+        Ok(_) -> count_x_mas(matrix, acc, row_idx, col_idx + 1)
+      }
+  }
+}
+
+fn count_x_mas_at(matrix, row_idx, col_idx) {
+  let has_diag1 =
+    {
+      has_char_at(matrix, row_idx - 1, col_idx - 1, "M")
+      && has_char_at(matrix, row_idx + 1, col_idx + 1, "S")
+    }
+    || {
+      has_char_at(matrix, row_idx - 1, col_idx - 1, "S")
+      && has_char_at(matrix, row_idx + 1, col_idx + 1, "M")
+    }
+  let has_diag2 =
+    {
+      has_char_at(matrix, row_idx - 1, col_idx + 1, "M")
+      && has_char_at(matrix, row_idx + 1, col_idx - 1, "S")
+    }
+    || {
+      has_char_at(matrix, row_idx - 1, col_idx + 1, "S")
+      && has_char_at(matrix, row_idx + 1, col_idx - 1, "M")
+    }
+  case has_diag1 && has_diag2 {
+    True -> 1
+    False -> 0
   }
 }
