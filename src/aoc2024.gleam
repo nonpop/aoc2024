@@ -11,7 +11,7 @@ import simplifile
 
 pub fn main() {
   let input = "day6_large.txt"
-  let solver = day6.solve1
+  let solver = day6.solve2
 
   let assert Ok(content) = simplifile.read("inputs/" <> input)
   let lines = string.split(content, on: "\n")
