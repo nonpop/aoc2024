@@ -41,7 +41,24 @@ fn report_good(xs, order) {
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  lines
+  |> list.map(parse_line)
+  |> list.filter(is_safe2)
+  |> list.length
+}
+
+fn is_safe2(report) {
+  is_safe(report) || list.any(candidates([], report), is_safe)
+}
+
+fn candidates(init, tail) {
+  case tail {
+    [] -> []
+    [x, ..xs] -> [
+      list.append(init, xs),
+      ..candidates(list.append(init, [x]), xs)
+    ]
+  }
 }
 
 fn parse_line(line) {
