@@ -1,5 +1,6 @@
 import gleam/int
 import gleam/list
+import gleam/option.{None, Some}
 import gleam/string
 import util
 
@@ -13,7 +14,13 @@ pub fn solve1(lines: List(String)) -> Int {
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  let #(rules, orderings) = parse(lines)
+
+  orderings
+  |> list.filter(fn(ordering) { !in_right_order(rules, ordering) })
+  |> list.map(order(rules, _))
+  |> list.map(take_middle)
+  |> int.sum
 }
 
 fn parse(lines) {
@@ -70,4 +77,29 @@ fn take_middle(ordering) {
   |> list.drop(middle_idx)
   |> list.first
   |> util.assert_ok
+}
+
+fn order(rules, pages) {
+  case pages {
+    [] -> []
+    _ -> {
+      let assert Some(#(init, first, tail)) = find_first(rules, [], pages)
+      [first, ..order(rules, list.append(init, tail))]
+    }
+  }
+}
+
+fn find_first(rules, init, tail) {
+  case tail {
+    [] -> None
+    [x, ..xs] ->
+      case can_be_before_all(rules, x, list.append(init, xs)) {
+        True -> Some(#(init, x, xs))
+        False -> find_first(rules, [x, ..init], xs)
+      }
+  }
+}
+
+fn can_be_before_all(rules, x, xs) {
+  list.all(xs, fn(y) { pair_in_right_order(rules, x, y) })
 }
