@@ -1,3 +1,4 @@
+import gleam/int
 import gleam/list
 import gleam/string
 import gleamy/map
@@ -5,20 +6,25 @@ import util.{type Pos, Pos}
 
 pub fn solve1(lines: List(String)) -> Int {
   let #(m, rows, cols) = util.parse_table(lines)
+  solve(m, rows, cols, [1])
+}
+
+pub fn solve2(lines: List(String)) -> Int {
+  let #(m, rows, cols) = util.parse_table(lines)
+  solve(m, rows, cols, list.range(0, int.max(rows, cols)))
+}
+
+fn solve(m, rows, cols, coeffs) {
   let antenna_positions =
     find_antennas(m, map.new(string.compare), Pos(0, 0))
     |> map.to_list
     |> list.map(fn(kv) { kv.1 })
 
   antenna_positions
-  |> list.flat_map(freq_antinodes)
+  |> list.flat_map(freq_antinodes(_, coeffs))
   |> list.filter(in_bounds(_, rows, cols))
   |> list.unique
   |> list.length
-}
-
-pub fn solve2(lines: List(String)) -> Int {
-  todo
 }
 
 fn find_antennas(m, acc, pos) {
@@ -44,13 +50,17 @@ fn add_antenna(antennas, freq, pos) {
   }
 }
 
-fn antinodes(pos1: Pos, pos2: Pos) {
+fn antinodes(pos1: Pos, pos2: Pos, coeffs) {
   let row_diff = pos2.row - pos1.row
   let col_diff = pos2.col - pos1.col
-  let antinode1 = Pos(row: pos2.row + row_diff, col: pos2.col + col_diff)
-  let antinode2 = Pos(row: pos1.row - row_diff, col: pos1.col - col_diff)
 
-  #(antinode1, antinode2)
+  coeffs
+  |> list.flat_map(fn(c) {
+    [
+      Pos(row: pos2.row + c * row_diff, col: pos2.col + c * col_diff),
+      Pos(row: pos1.row - c * row_diff, col: pos1.col - c * col_diff),
+    ]
+  })
 }
 
 fn pairs(xs) {
@@ -60,14 +70,10 @@ fn pairs(xs) {
   }
 }
 
-fn freq_antinodes(positions) {
+fn freq_antinodes(positions, coeffs) {
   positions
   |> pairs
-  |> list.flat_map(fn(p) {
-    let #(pos1, pos2) = p
-    let #(an1, an2) = antinodes(pos1, pos2)
-    [an1, an2]
-  })
+  |> list.flat_map(fn(p) { antinodes(p.0, p.1, coeffs) })
 }
 
 fn in_bounds(pos: Pos, rows, cols) {
