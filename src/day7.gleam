@@ -4,16 +4,20 @@ import gleam/string
 import util
 
 pub fn solve1(lines: List(String)) -> Int {
-  lines
-  |> list.filter(fn(line) { line != "" })
-  |> list.map(parse_line)
-  |> list.filter(fn(eqn) { satisfiable(eqn.0, eqn.1) })
-  |> list.map(fn(eqn) { eqn.0 })
-  |> int.sum
+  solve(lines, [Add, Mul])
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  solve(lines, [Add, Mul, Concat])
+}
+
+fn solve(lines, ops) {
+  lines
+  |> list.filter(fn(line) { line != "" })
+  |> list.map(parse_line)
+  |> list.filter(fn(eqn) { satisfiable(eqn.0, eqn.1, ops) })
+  |> list.map(fn(eqn) { eqn.0 })
+  |> int.sum
 }
 
 fn parse_line(line) {
@@ -25,22 +29,47 @@ fn parse_line(line) {
   #(test_value, operands)
 }
 
-fn satisfiable(test_value, operands) {
-  list.range(0, int.bitwise_shift_left(1, list.length(operands) - 1) - 1)
+type Op {
+  Add
+  Mul
+  Concat
+}
+
+fn combine(op, x, y) {
+  case op {
+    Add -> x + y
+    Mul -> x * y
+    Concat -> util.must_string_to_int(int.to_string(x) <> int.to_string(y))
+  }
+}
+
+fn ops_lists(of, len) {
+  case len <= 1 {
+    True -> list.map(of, fn(op) { [op] })
+    False -> {
+      let tails = ops_lists(of, len - 1)
+
+      of
+      |> list.map(fn(op) { tails |> list.map(fn(tail) { [op, ..tail] }) })
+      |> list.flatten
+    }
+  }
+}
+
+fn satisfiable(test_value, operands, ops) {
+  ops_lists(ops, list.length(operands) - 1)
   |> list.map(compute(operands, _))
   |> list.any(fn(x) { x == test_value })
 }
 
-fn compute(operands, operators_bitmap) {
+fn compute(operands, operators) {
   case operands {
     [] -> panic as "no operands"
     [x] -> x
     [x1, x2, ..xs] ->
-      case int.bitwise_and(operators_bitmap, 1) == 0 {
-        False ->
-          compute([x1 + x2, ..xs], int.bitwise_shift_right(operators_bitmap, 1))
-        True ->
-          compute([x1 * x2, ..xs], int.bitwise_shift_right(operators_bitmap, 1))
+      case operators {
+        [] -> panic as "no operators"
+        [op, ..ops] -> compute([combine(op, x1, x2), ..xs], ops)
       }
   }
 }
