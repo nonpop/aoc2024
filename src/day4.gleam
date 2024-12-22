@@ -14,6 +14,7 @@ pub fn solve2(lines: List(String)) -> Int {
 
 fn parse(lines) {
   lines
+  |> list.filter(fn(s) { s != "" })
   |> list.map(fn(line) { line |> string.to_graphemes |> glearray.from_list })
   |> glearray.from_list
 }

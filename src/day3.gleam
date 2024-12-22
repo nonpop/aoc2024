@@ -7,7 +7,7 @@ import util
 
 pub fn solve1(lines: List(String)) -> Int {
   let assert Ok(re) = regexp.from_string("mul\\((\\d{1,3}),(\\d{1,3})\\)")
-  let memory = string.concat(lines)
+  let memory = string.concat(lines |> list.filter(fn(s) { s != "" }))
 
   regexp.scan(re, memory)
   |> list.map(operands)
@@ -23,7 +23,7 @@ fn operands(match: regexp.Match) {
 pub fn solve2(lines: List(String)) -> Int {
   let assert Ok(re) =
     regexp.from_string("do\\(\\)|don't\\(\\)|mul\\((\\d{1,3}),(\\d{1,3})\\)")
-  let memory = string.concat(lines)
+  let memory = string.concat(lines |> list.filter(fn(s) { s != "" }))
 
   regexp.scan(re, memory)
   |> list.fold(from: #(True, 0), with: step)

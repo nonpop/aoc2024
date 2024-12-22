@@ -26,6 +26,7 @@ fn count_occurrences(xs: List(Int), x: Int) -> Int {
 
 fn parse_lines(lines: List(String)) -> #(List(Int), List(Int)) {
   lines
+  |> list.filter(fn(s) { s != "" })
   |> list.map(parse_line)
   |> list.unzip
 }

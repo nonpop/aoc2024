@@ -6,6 +6,7 @@ import util
 
 pub fn solve1(lines: List(String)) -> Int {
   lines
+  |> list.filter(fn(s) { s != "" })
   |> list.map(parse_line)
   |> list.filter(is_safe)
   |> list.length
@@ -42,6 +43,7 @@ fn report_good(xs, order) {
 
 pub fn solve2(lines: List(String)) -> Int {
   lines
+  |> list.filter(fn(s) { s != "" })
   |> list.map(parse_line)
   |> list.filter(is_safe2)
   |> list.length
