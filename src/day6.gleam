@@ -6,12 +6,12 @@ import gleam/order
 import gleam/string
 import gleamy/set
 import glearray
-import util
+import util.{type Pos, Pos}
 
 pub fn solve1(lines: List(String)) -> Int {
   let map = parse_input(lines)
-  let assert Some(#(init_pos, init_dir)) = find_guard(map, #(0, 0))
-  let init_visited = set.new(compare_pos)
+  let assert Some(#(init_pos, init_dir)) = find_guard(map, Pos(0, 0))
+  let init_visited = set.new(util.compare_pos)
   let init_state = #(init_pos, init_dir, init_visited)
 
   set.count(walk(map, init_state))
@@ -19,8 +19,8 @@ pub fn solve1(lines: List(String)) -> Int {
 
 pub fn solve2(lines: List(String)) -> Int {
   let map = parse_input(lines)
-  let assert Some(#(init_pos, init_dir)) = find_guard(map, #(0, 0))
-  let init_visited = set.new(compare_pos)
+  let assert Some(#(init_pos, init_dir)) = find_guard(map, Pos(0, 0))
+  let init_visited = set.new(util.compare_pos)
   let init_visited_dir = set.new(compare_pos_dir)
   let init_state = #(init_pos, init_dir, init_visited)
   let obstruction_candidates = set.delete(walk(map, init_state), init_pos)
@@ -44,13 +44,11 @@ fn parse_input(lines) {
   |> glearray.from_list
 }
 
-fn find_guard(map, pos) {
-  let #(rowi, coli) = pos
-
+fn find_guard(map, pos: Pos) {
   case util.table_get(map, pos) {
     util.TableGetOk("^") -> Some(#(pos, Up))
-    util.TableGetOk(_) -> find_guard(map, #(rowi, coli + 1))
-    util.TableGetColOutOfRange -> find_guard(map, #(rowi + 1, 0))
+    util.TableGetOk(_) -> find_guard(map, Pos(row: pos.row, col: pos.col + 1))
+    util.TableGetColOutOfRange -> find_guard(map, Pos(row: pos.row + 1, col: 0))
     util.TableGetRowOutOfRange -> None
   }
 }
@@ -71,22 +69,11 @@ fn dir_to_int(dir) {
   }
 }
 
-fn compare_pos(pos1, pos2) {
-  let #(row1, col1) = pos1
-  let #(row2, col2) = pos2
-
-  case int.compare(row1, row2) {
-    order.Lt -> order.Lt
-    order.Gt -> order.Gt
-    order.Eq -> int.compare(col1, col2)
-  }
-}
-
 fn compare_pos_dir(pos_dir1, pos_dir2) {
   let #(pos1, dir1) = pos_dir1
   let #(pos2, dir2) = pos_dir2
 
-  case compare_pos(pos1, pos2) {
+  case util.compare_pos(pos1, pos2) {
     order.Lt -> order.Lt
     order.Gt -> order.Gt
     order.Eq -> int.compare(dir_to_int(dir1), dir_to_int(dir2))
@@ -105,11 +92,10 @@ fn walk(map, state) {
   }
 }
 
-fn forward_from(pos, dir) {
-  let #(row, col) = pos
+fn forward_from(pos: Pos, dir) {
   let #(row_ofs, col_ofs) = dir_ofs(dir)
 
-  #(row + row_ofs, col + col_ofs)
+  Pos(row: pos.row + row_ofs, col: pos.col + col_ofs)
 }
 
 fn dir_ofs(dir) {
