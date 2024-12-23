@@ -1,4 +1,3 @@
-import gleam/io
 import gleam/list
 import gleamy/set
 import util.{type Pos, Pos}
@@ -9,7 +8,8 @@ pub fn solve1(lines: List(String)) -> Int {
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  let #(m, rows, cols) = parse_input(lines)
+  sum_ratings(m, rows, cols, Pos(0, 0), 0)
 }
 
 fn parse_input(lines) {
@@ -25,18 +25,26 @@ fn sum_scores(m, rows, cols, pos, acc) {
       sum_scores(m, rows, cols, Pos(pos.row + 1, 0), acc)
     util.TableGetOk(_) -> {
       let score =
-        peaks_from(
-          m,
-          rows,
-          cols,
-          pos,
-          0,
-          set.new(util.compare_pos),
-          set.new(util.compare_pos),
-        )
+        peaks_from(m, rows, cols, pos, 0, set.new(util.compare_pos), [])
+        |> set.from_list(util.compare_pos)
         |> set.count
 
       sum_scores(m, rows, cols, Pos(pos.row, pos.col + 1), acc + score)
+    }
+  }
+}
+
+fn sum_ratings(m, rows, cols, pos, acc) {
+  case util.table_get(m, pos) {
+    util.TableGetRowOutOfRange -> acc
+    util.TableGetColOutOfRange ->
+      sum_ratings(m, rows, cols, Pos(pos.row + 1, 0), acc)
+    util.TableGetOk(_) -> {
+      let score =
+        peaks_from(m, rows, cols, pos, 0, set.new(util.compare_pos), [])
+        |> list.length
+
+      sum_ratings(m, rows, cols, Pos(pos.row, pos.col + 1), acc + score)
     }
   }
 }
@@ -49,7 +57,7 @@ fn peaks_from(m, rows, cols, pos, expected_pos_height, seen, acc) {
       case util.table_get(m, pos) {
         util.TableGetRowOutOfRange | util.TableGetColOutOfRange -> acc
         util.TableGetOk(pos_height) if pos_height != expected_pos_height -> acc
-        util.TableGetOk(_) if expected_pos_height == 9 -> set.insert(acc, pos)
+        util.TableGetOk(_) if expected_pos_height == 9 -> [pos, ..acc]
         util.TableGetOk(_) ->
           [
             Pos(row: pos.row - 1, col: pos.col),
@@ -57,7 +65,7 @@ fn peaks_from(m, rows, cols, pos, expected_pos_height, seen, acc) {
             Pos(row: pos.row, col: pos.col - 1),
             Pos(row: pos.row, col: pos.col + 1),
           ]
-          |> list.map(fn(new_pos) {
+          |> list.flat_map(fn(new_pos) {
             peaks_from(
               m,
               rows,
@@ -68,7 +76,6 @@ fn peaks_from(m, rows, cols, pos, expected_pos_height, seen, acc) {
               acc,
             )
           })
-          |> list.fold(from: set.new(util.compare_pos), with: set.union)
       }
     }
   }
