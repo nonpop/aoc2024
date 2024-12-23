@@ -74,3 +74,14 @@ pub fn debug_log(x, f) {
   io.debug(f(x))
   x
 }
+
+pub fn map_array(a, f) {
+  a
+  |> glearray.to_list
+  |> list.map(f)
+  |> glearray.from_list
+}
+
+pub fn map_table(table, f) {
+  map_array(table, fn(row) { map_array(row, f) })
+}
