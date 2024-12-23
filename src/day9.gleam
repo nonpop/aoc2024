@@ -1,4 +1,5 @@
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/string
 import gleamy/map
@@ -22,7 +23,31 @@ pub fn solve1(lines: List(String)) -> Int {
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  let assert [line, ..] = lines
+
+  let blocks =
+    line
+    |> string.to_graphemes
+    |> list.map(util.must_string_to_int)
+    |> to_blocks(True, 0, 0, map.new(int.compare))
+
+  let max_file_id =
+    blocks
+    |> map.to_list
+    |> list.filter_map(fn(b) {
+      case b.1 {
+        File(id) -> Ok(id)
+        Free -> Error(Nil)
+      }
+    })
+    |> list.fold(from: 0, with: int.max)
+
+  blocks
+  |> compactify2(max_file_id, map.count(blocks))
+  |> map.to_list
+  |> list.sort(by: fn(p1, p2) { int.compare(p1.0, p2.0) })
+  |> list.map(fn(p) { p.1 })
+  |> checksum(0, 0)
 }
 
 type Block {
@@ -85,5 +110,96 @@ fn checksum(blocks, idx, acc) {
     [] -> acc
     [Free, ..bs] -> checksum(bs, idx + 1, acc)
     [File(file_id), ..bs] -> checksum(bs, idx + 1, acc + idx * file_id)
+  }
+}
+
+fn compactify2(blocks, cur_file_id, end_idx) {
+  case cur_file_id < 0 {
+    True -> blocks
+    False -> {
+      io.debug(cur_file_id)
+      let #(new_blocks, new_end_idx) =
+        try_move_file(blocks, cur_file_id, end_idx)
+      compactify2(new_blocks, cur_file_id - 1, new_end_idx)
+    }
+  }
+}
+
+fn try_move_file(blocks, file_id, end_idx) {
+  let #(file_start_idx, file_len) = find_file(blocks, file_id, end_idx - 1)
+
+  case find_free(blocks, file_len, 0, file_start_idx) {
+    Error(Nil) -> #(blocks, end_idx - file_len)
+    Ok(free_start_idx) -> #(
+      move_file(blocks, file_start_idx, free_start_idx, file_id, file_len),
+      end_idx - file_len,
+    )
+  }
+}
+
+fn find_file(blocks, file_id, idx) {
+  case idx < 0 {
+    True -> panic
+    False ->
+      case map.get(blocks, idx) {
+        Error(Nil) | Ok(Free) -> find_file(blocks, file_id, idx - 1)
+        Ok(File(found_id)) ->
+          case found_id == file_id {
+            False -> find_file(blocks, file_id, idx - 1)
+            True -> collect_file(blocks, file_id, idx, 0)
+          }
+      }
+  }
+}
+
+fn collect_file(blocks, file_id, idx, len) {
+  case map.get(blocks, idx) {
+    Error(Nil) | Ok(Free) -> #(idx + 1, len)
+    Ok(File(found_id)) ->
+      case found_id == file_id {
+        False -> #(idx + 1, len)
+        True -> collect_file(blocks, file_id, idx - 1, len + 1)
+      }
+  }
+}
+
+fn find_free(blocks, len, idx, before_idx) {
+  case idx + len > before_idx {
+    True -> Error(Nil)
+    False ->
+      case map.get(blocks, idx) {
+        Error(Nil) | Ok(File(_)) -> find_free(blocks, len, idx + 1, before_idx)
+        Ok(Free) ->
+          case verify_free(blocks, len, idx, before_idx) {
+            False -> find_free(blocks, len, idx + 1, before_idx)
+            True -> Ok(idx)
+          }
+      }
+  }
+}
+
+fn verify_free(blocks, len, idx, before_idx) {
+  case len <= 0 {
+    True -> True
+    False ->
+      case idx >= before_idx {
+        True -> False
+        False ->
+          case map.get(blocks, idx) {
+            Error(Nil) | Ok(File(_)) -> False
+            Ok(Free) -> verify_free(blocks, len - 1, idx + 1, before_idx)
+          }
+      }
+  }
+}
+
+fn move_file(blocks, file_idx, free_idx, file_id, len) {
+  case len <= 0 {
+    True -> blocks
+    False ->
+      blocks
+      |> map.insert(free_idx, File(file_id))
+      |> map.insert(file_idx, Free)
+      |> move_file(file_idx + 1, free_idx + 1, file_id, len - 1)
   }
 }

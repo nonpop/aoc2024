@@ -1,4 +1,5 @@
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/order.{type Order}
 import gleam/string
@@ -67,4 +68,9 @@ pub fn map_values(m, f, compare_keys) {
   |> map.to_list
   |> list.map(fn(kv) { #(kv.0, f(kv)) })
   |> map.from_list(compare_keys)
+}
+
+pub fn debug_log(x, f) {
+  io.debug(f(x))
+  x
 }
