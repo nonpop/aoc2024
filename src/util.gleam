@@ -63,6 +63,14 @@ pub fn compare_pos(a: Pos, b: Pos) -> Order {
   }
 }
 
+pub type PosOfs {
+  PosOfs(drow: Int, dcol: Int)
+}
+
+pub fn move(pos: Pos, ofs: PosOfs) {
+  Pos(row: pos.row + ofs.drow, col: pos.col + ofs.dcol)
+}
+
 pub fn map_values(m, f, compare_keys) {
   m
   |> map.to_list
