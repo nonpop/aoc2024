@@ -1,3 +1,4 @@
+import glat
 import gleam/int
 import gleam/list
 import gleam/option.{Some}
@@ -11,7 +12,48 @@ pub fn solve1(lines: List(String)) -> Int {
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  // Computing the determinants of the button offset matrices, we see that for each machine there is
+  // at most one way of pressing the buttons to get to the prize. Thus, we can just solve the linear
+  // system and verify that the solution is integral.
+
+  parse(lines)
+  |> list.map(fn(m) {
+    Machine(
+      ..m,
+      prize_x: m.prize_x + 10_000_000_000_000,
+      prize_y: m.prize_y + 10_000_000_000_000,
+    )
+  })
+  |> list.map(solve_smallest_cost(_, 3, 1))
+  |> int.sum
+}
+
+fn solve_smallest_cost(machine: Machine, a_cost, b_cost) {
+  let a = glat.from_int(machine.but_a_x)
+  let b = glat.from_int(machine.but_b_x)
+  let c = glat.from_int(machine.but_a_y)
+  let d = glat.from_int(machine.but_b_y)
+
+  let det = glat.subtract(glat.multiply(a, d), glat.multiply(b, c))
+
+  let px = glat.from_int(machine.prize_x)
+  let py = glat.from_int(machine.prize_y)
+
+  let a_presses =
+    glat.reduce(glat.divide(
+      glat.subtract(glat.multiply(px, d), glat.multiply(py, b)),
+      det,
+    ))
+  let b_presses =
+    glat.reduce(glat.divide(
+      glat.subtract(glat.multiply(py, a), glat.multiply(px, c)),
+      det,
+    ))
+
+  case a_presses.den == 1 && b_presses.den == 1 {
+    False -> 0
+    True -> a_presses.num * a_cost + b_presses.num * b_cost
+  }
 }
 
 fn brute_force_smallest_cost(machine, a_cost, a_max, b_cost, b_max) {
