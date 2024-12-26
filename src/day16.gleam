@@ -12,50 +12,81 @@ pub fn solve1(lines: List(String)) -> Int {
     maze,
     State(
       worklist: [
-        #(maze.start, Right, 0),
-        #(maze.start, Up, 1000),
-        #(maze.start, Down, 1000),
-        #(maze.start, Left, 2000),
+        #([], maze.start, Right, 0),
+        #([], maze.start, Up, 1000),
+        #([], maze.start, Down, 1000),
+        #([], maze.start, Left, 2000),
       ],
       cheapest: map.new(compare_pos_dir)
-        |> map.insert(#(maze.start, Right), 0)
-        |> map.insert(#(maze.start, Up), 1000)
-        |> map.insert(#(maze.start, Down), 1000)
-        |> map.insert(#(maze.start, Left), 2000),
+        |> map.insert(#(maze.start, Right), #([[]], 0))
+        |> map.insert(#(maze.start, Up), #([[]], 1000))
+        |> map.insert(#(maze.start, Down), #([[]], 1000))
+        |> map.insert(#(maze.start, Left), #([[]], 2000)),
     ),
-  )
+  ).1
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  // this will run a few minutes (but less than 10min)
+  let maze = parse(lines)
+  find_cheapest(
+    maze,
+    State(
+      worklist: [
+        #([], maze.start, Right, 0),
+        #([], maze.start, Up, 1000),
+        #([], maze.start, Down, 1000),
+        #([], maze.start, Left, 2000),
+      ],
+      cheapest: map.new(compare_pos_dir)
+        |> map.insert(#(maze.start, Right), #([[]], 0))
+        |> map.insert(#(maze.start, Up), #([[]], 1000))
+        |> map.insert(#(maze.start, Down), #([[]], 1000))
+        |> map.insert(#(maze.start, Left), #([[]], 2000)),
+    ),
+  ).0
+  |> list.flatten
+  |> set.from_list(util.compare_pos)
+  |> fn(positions_in_prefixes) { set.count(positions_in_prefixes) + 1 }
 }
 
 fn find_cheapest(maze: Maze, state: State) {
   case state.worklist {
     [] -> find_cheapest_at(maze.end, state.cheapest)
-    [#(pos, dir, cost), ..xs] -> {
+    [#(prefix, pos, dir, cost), ..xs] -> {
+      let prefix = [pos, ..prefix]
       let nexts =
         [
-          #(move(pos, dir), dir, cost + 1),
-          #(move(pos, turn_left(dir)), turn_left(dir), cost + 1000 + 1),
-          #(move(pos, turn_right(dir)), turn_right(dir), cost + 1000 + 1),
+          #(prefix, move(pos, dir), dir, cost + 1),
+          #(prefix, move(pos, turn_left(dir)), turn_left(dir), cost + 1000 + 1),
+          #(
+            prefix,
+            move(pos, turn_right(dir)),
+            turn_right(dir),
+            cost + 1000 + 1,
+          ),
         ]
+        |> list.filter(fn(p) { !set.contains(maze.walls, p.1) })
         |> list.filter(fn(p) {
-          case set.contains(maze.walls, p.0) {
-            True -> False
-            False ->
-              case map.get(state.cheapest, #(p.0, p.1)) {
-                Error(_) -> True
-                Ok(cost) -> cost > p.2
-              }
+          case map.get(state.cheapest, #(p.1, p.2)) {
+            Error(_) -> True
+            Ok(#(_, cost)) -> p.3 <= cost
           }
         })
 
-      let worklist = list.append(xs, nexts)
+      let worklist = list.append(nexts, xs)
       let cheapest =
         nexts
         |> list.fold(from: state.cheapest, with: fn(acc, p) {
-          map.insert(acc, #(p.0, p.1), p.2)
+          let key = #(p.1, p.2)
+          case map.get(acc, key) {
+            Error(Nil) -> map.insert(acc, key, #([p.0], p.3))
+            Ok(#(prefixes, cost)) ->
+              case p.3 < cost {
+                True -> map.insert(acc, key, #([p.0], p.3))
+                False -> map.insert(acc, key, #([p.0, ..prefixes], p.3))
+              }
+          }
         })
 
       find_cheapest(maze, State(worklist:, cheapest:))
@@ -78,7 +109,13 @@ fn min(xs) {
     [Error(_), ..xs] -> min(xs)
     [Ok(x)] -> x
     [Ok(x), Error(_), ..xs] -> min([Ok(x), ..xs])
-    [Ok(x), Ok(y), ..xs] -> min([Ok(int.min(x, y)), ..xs])
+    [Ok(#(ps, x)), Ok(#(qs, y)), ..xs] -> {
+      case int.compare(x, y) {
+        order.Lt -> min([Ok(#(ps, x)), ..xs])
+        order.Eq -> min([Ok(#(list.append(ps, qs), x)), ..xs])
+        order.Gt -> min([Ok(#(qs, y)), ..xs])
+      }
+    }
   }
 }
 
@@ -137,7 +174,10 @@ fn compare_pos_dir(pd1: #(Pos, Dir), pd2: #(Pos, Dir)) {
 }
 
 type State {
-  State(worklist: List(#(Pos, Dir, Int)), cheapest: Map(#(Pos, Dir), Int))
+  State(
+    worklist: List(#(List(Pos), Pos, Dir, Int)),
+    cheapest: Map(#(Pos, Dir), #(List(List(Pos)), Int)),
+  )
 }
 
 fn parse(lines) {
