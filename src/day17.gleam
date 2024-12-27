@@ -18,7 +18,32 @@ pub fn solve1(lines: List(String)) -> Int {
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  let machine = parse(lines)
+  let xs = [5, 3, 2, 2, 3, 5, 3, 7, 2, 7, 2, 3, 6, 0, 1, 7]
+  list.range(0, 7)
+  |> list.map(fn(x) {
+    let ra =
+      list.append(xs, [x])
+      |> list.fold(0, fn(acc, x) { int.bitwise_shift_left(acc, 3) + x })
+    run(Machine(..machine, ra:), [])
+    |> list.reverse
+  })
+  |> print_opts
+
+  io.println("want: 2,4,1,2,7,5,4,5,0,3,1,7,5,5,3,0")
+
+  xs |> list.fold(0, fn(acc, x) { int.bitwise_shift_left(acc, 3) + x })
+}
+
+fn print_opts(opts) {
+  opts
+  |> list.index_map(fn(opt, i) {
+    io.println(
+      int.to_string(i)
+      <> ": "
+      <> opt |> list.map(int.to_string) |> string.join(with: ","),
+    )
+  })
 }
 
 type Machine {
