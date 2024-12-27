@@ -1,7 +1,10 @@
+import gleam/int
+import gleam/io
 import gleam/list
 import gleam/option.{Some}
 import gleam/regexp
-import util
+import gleamy/set
+import util.{type Pos, Pos}
 
 pub fn solve1(lines: List(String)) -> Int {
   let #(w, h) = #(101, 103)
@@ -14,7 +17,120 @@ pub fn solve1(lines: List(String)) -> Int {
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  let #(w, h) = #(101, 103)
+
+  lines
+  |> list.filter(fn(line) { line != "" })
+  |> list.map(parse_line)
+  |> print_potential_trees(w, h, 0, 10_000)
+
+  -1
+}
+
+fn print_potential_trees(robots, w, h, step, max_steps) {
+  case step > max_steps {
+    True -> Nil
+    False -> {
+      let robots_set = robots_to_set(robots, set.new(util.compare_pos))
+      case step % 1000 == 0 {
+        True -> {
+          io.println(
+            "(step "
+            <> int.to_string(step)
+            <> "/"
+            <> int.to_string(max_steps)
+            <> "...)",
+          )
+        }
+        False -> Nil
+      }
+      case is_potential_tree(robots_set, w, h, Pos(0, 0), 10, 0) {
+        True -> {
+          io.println("after " <> int.to_string(step) <> " steps:")
+          print_step(robots_set, w, h, 0, 0)
+        }
+        False -> Nil
+      }
+      print_potential_trees(
+        list.map(robots, steps(_, w, h, 1)),
+        w,
+        h,
+        step + 1,
+        max_steps,
+      )
+    }
+  }
+}
+
+fn is_potential_tree(robots, w, h, pos: Pos, threshold, found) {
+  case found >= threshold {
+    True -> True
+    False ->
+      case pos.row >= h {
+        True -> False
+        False ->
+          case pos.col >= w {
+            True ->
+              is_potential_tree(
+                robots,
+                w,
+                h,
+                Pos(row: pos.row + 1, col: 0),
+                threshold,
+                0,
+              )
+            False ->
+              case set.contains(robots, pos) {
+                False ->
+                  is_potential_tree(
+                    robots,
+                    w,
+                    h,
+                    Pos(..pos, col: pos.col + 1),
+                    threshold,
+                    0,
+                  )
+                True ->
+                  is_potential_tree(
+                    robots,
+                    w,
+                    h,
+                    Pos(..pos, col: pos.col + 1),
+                    threshold,
+                    found + 1,
+                  )
+              }
+          }
+      }
+  }
+}
+
+fn robots_to_set(robots, acc) {
+  case robots {
+    [] -> acc
+    [#(px, py, _, _), ..xs] ->
+      robots_to_set(xs, set.insert(acc, Pos(row: py, col: px)))
+  }
+}
+
+fn print_step(robots, w, h, row, col) {
+  case row >= h {
+    True -> io.println("")
+    False ->
+      case col >= w {
+        True -> {
+          io.println("")
+          print_step(robots, w, h, row + 1, 0)
+        }
+        False -> {
+          case set.contains(robots, Pos(row:, col:)) {
+            True -> io.print("#")
+            False -> io.print(".")
+          }
+          print_step(robots, w, h, row, col + 1)
+        }
+      }
+  }
 }
 
 fn safety_factor(robots, w, h) {
