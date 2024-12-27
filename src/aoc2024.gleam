@@ -20,8 +20,8 @@ import gleam/string
 import simplifile
 
 pub fn main() {
-  let input = "day11_large.txt"
-  let solver = day11.solve2
+  let input = "day12_large.txt"
+  let solver = day12.solve2
 
   let assert Ok(content) = simplifile.read("inputs/" <> input)
   let lines = string.split(content, on: "\n")
