@@ -6,6 +6,7 @@ import day13
 import day14
 import day15
 import day16
+import day17
 import day2
 import day3
 import day4
@@ -20,8 +21,8 @@ import gleam/string
 import simplifile
 
 pub fn main() {
-  let input = "day14_large.txt"
-  let solver = day14.solve2
+  let input = "day17_large.txt"
+  let solver = day17.solve1
 
   let assert Ok(content) = simplifile.read("inputs/" <> input)
   let lines = string.split(content, on: "\n")
