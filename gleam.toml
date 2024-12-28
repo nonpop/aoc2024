@@ -19,6 +19,7 @@ gleam_regexp = ">= 1.0.0 and < 2.0.0"
 glearray = ">= 1.0.0 and < 2.0.0"
 gleamy_structures = ">= 1.1.0 and < 2.0.0"
 glat = ">= 0.1.0 and < 1.0.0"
+ref = ">= 0.3.3 and < 1.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
