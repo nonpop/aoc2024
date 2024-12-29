@@ -1,4 +1,5 @@
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/string
 import gleamy/map
@@ -9,39 +10,65 @@ pub fn solve1(lines: List(String)) -> Int {
   let track = parse(lines)
   let route = find_route(track, track.start, map.new(util.compare_pos))
 
-  cheat_savings(track, route)
+  cheat_savings(route, 2)
   |> list.filter(fn(saving) { saving >= 100 })
   |> list.length
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  let track = parse(lines)
+  let route = find_route(track, track.start, map.new(util.compare_pos))
+
+  cheat_savings(route, 20)
+  |> list.filter(fn(saving) { saving >= 100 })
+  |> list.length
 }
 
-fn cheat_savings(track, route) {
+fn cheat_savings(route, max_dist) {
   route
   |> map.to_list
-  |> list.flat_map(fn(start) { cheat_savings_at(track, route, start.0) })
+  |> list.flat_map(fn(start) {
+    cheat_savings_at(route, io.debug(start.0), max_dist)
+  })
 }
 
-fn cheat_savings_at(track, route, start) {
-  [#(1, 0), #(-1, 0), #(0, 1), #(0, -1)]
-  |> list.map(cheat_savings_at_dir(track, route, start, _))
-}
-
-fn cheat_savings_at_dir(track: Track, route, start: Pos, d: #(Int, Int)) {
+fn cheat_savings_at(route, start, max_dist) {
   let assert Ok(dist_at_start) = map.get(route, start)
-  let middle = Pos(row: start.row + d.0, col: start.col + d.1)
-  case set.contains(track.walls, middle) {
-    False -> 0
-    True -> {
-      let end = Pos(row: start.row + 2 * d.0, col: start.col + 2 * d.1)
-      case map.get(route, end) {
-        Error(Nil) -> 0
-        Ok(dist_at_end) -> int.max(0, dist_at_end - dist_at_start - 2)
-      }
+
+  positions_at_max_dist(start, max_dist)
+  |> set.to_list
+  |> list.map(fn(end) {
+    case map.get(route, end) {
+      Error(Nil) -> 0
+      Ok(dist_at_end) -> dist_at_end - dist_at_start - dist(start, end)
     }
-  }
+  })
+  |> list.filter(fn(saving) { saving > 0 })
+}
+
+fn positions_at_max_dist(pos: Pos, max_dist) {
+  list.range(0, max_dist)
+  |> list.fold(set.new(util.compare_pos), fn(acc, dist) {
+    set.union(acc, positions_at_dist(pos, dist))
+  })
+}
+
+fn positions_at_dist(pos: Pos, dist) {
+  list.range(0, dist)
+  |> list.flat_map(fn(d) {
+    [
+      Pos(row: pos.row + d, col: pos.col + dist - d),
+      Pos(row: pos.row - d, col: pos.col + dist - d),
+      Pos(row: pos.row + d, col: pos.col - dist + d),
+      Pos(row: pos.row - d, col: pos.col - dist + d),
+    ]
+  })
+  |> set.from_list(util.compare_pos)
+}
+
+fn dist(start: Pos, end: Pos) {
+  int.absolute_value(start.row - end.row)
+  + int.absolute_value(start.col - end.col)
 }
 
 fn find_route(track: Track, pos, acc) {
