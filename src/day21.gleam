@@ -1,8 +1,10 @@
+import gleam/dict
 import gleam/int
 import gleam/list
 import gleam/order
 import gleam/pair
 import gleam/string
+import ref
 import util.{type Pos, Pos}
 
 pub fn solve1(lines: List(String)) -> Int {
@@ -16,17 +18,31 @@ pub fn solve1(lines: List(String)) -> Int {
   |> list.filter(fn(line) { line != "" })
   |> list.map(string.to_graphemes)
   |> list.map(fn(code) {
-    let best_seq = shortest_expansion(code, steppers)
-    complexity(code, best_seq)
+    let best_seq_len =
+      shortest_expansion_len(ref.cell(dict.new()), code, steppers)
+    complexity(code, best_seq_len)
   })
   |> int.sum
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  let steppers = [
+    #("A", numeric_step, numeric_pos),
+    ..list.repeat(#("A", directional_step, directional_pos), 25)
+  ]
+
+  lines
+  |> list.filter(fn(line) { line != "" })
+  |> list.map(string.to_graphemes)
+  |> list.map(fn(code) {
+    let best_seq_len =
+      shortest_expansion_len(ref.cell(dict.new()), code, steppers)
+    complexity(code, best_seq_len)
+  })
+  |> int.sum
 }
 
-fn complexity(code, seq) {
+fn complexity(code, seq_len) {
   let code_numeric =
     code
     |> string.join(with: "")
@@ -34,26 +50,36 @@ fn complexity(code, seq) {
     |> int.parse
     |> util.assert_ok
 
-  string.length(seq) * code_numeric
+  seq_len * code_numeric
 }
 
-fn shortest_expansion(positions, steppers) {
-  case positions, steppers {
-    [], _ -> ""
-    ps, [] -> string.join(ps, with: "")
-    [p, ..ps], [#(start, step, to_pos), ..steppers] -> {
-      let step1 =
-        sequences(to_pos(start), step, to_pos(p))
-        |> list.map(string.to_graphemes)
-        |> list.map(shortest_expansion(_, steppers))
-        |> list.sort(fn(a, b) {
-          int.compare(string.length(a), string.length(b))
-        })
-        |> list.first
-        |> util.assert_ok
+fn shortest_expansion_len(cache, positions, steppers) {
+  let steppers_key = steppers |> list.map(fn(p: #(_, _, _)) { p.0 })
+  let cache_key = #(string.join(positions, with: ""), steppers_key)
+  case dict.get(ref.get(cache), cache_key) {
+    Ok(result) -> result
+    Error(Nil) ->
+      case positions, steppers {
+        [], _ -> 0
+        ps, [] -> list.length(ps)
+        [p, ..ps], [#(start, step, to_pos), ..steppers] -> {
+          let step1 =
+            sequences(to_pos(start), step, to_pos(p))
+            |> list.map(string.to_graphemes)
+            |> list.map(shortest_expansion_len(cache, _, steppers))
+            |> list.sort(int.compare)
+            |> list.first
+            |> util.assert_ok
 
-      step1 <> shortest_expansion(ps, [#(p, step, to_pos), ..steppers])
-    }
+          let result =
+            step1
+            + shortest_expansion_len(cache, ps, [#(p, step, to_pos), ..steppers])
+
+          ref.set(cache, fn(cache) { dict.insert(cache, cache_key, result) })
+
+          result
+        }
+      }
   }
 }
 
