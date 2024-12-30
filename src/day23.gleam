@@ -1,4 +1,6 @@
 import gleam/dict.{type Dict}
+import gleam/int
+import gleam/io
 import gleam/list
 import gleam/option
 import gleam/result
@@ -24,7 +26,17 @@ pub fn solve1(lines: List(String)) -> Int {
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  parse(lines)
+  |> maximal_cliques
+  |> list.sort(fn(a, b) { int.compare(set.size(a), set.size(b)) })
+  |> list.last
+  |> result.lazy_unwrap(fn() { panic })
+  |> set.to_list
+  |> list.sort(string.compare)
+  |> string.join(with: ",")
+  |> io.println
+
+  -1
 }
 
 fn parse(lines) {
@@ -71,4 +83,33 @@ fn nodes(graph: Graph) {
 
 fn adj(graph: Graph, node) {
   graph.adj |> dict.get(node) |> result.unwrap(set.new())
+}
+
+fn maximal_cliques(graph) {
+  bron_kerbosch(graph, set.new(), nodes(graph), set.new()).3
+}
+
+fn bron_kerbosch(graph, r, p, x) {
+  let found = case set.is_empty(p) && set.is_empty(x) {
+    True -> [r]
+    False -> []
+  }
+
+  p
+  |> set.to_list
+  |> list.fold(#(r, p, x, found), fn(acc, v) {
+    let #(r, p, x, found) = acc
+
+    let #(_, _, _, rec_found) =
+      bron_kerbosch(
+        graph,
+        set.insert(r, v),
+        set.intersection(p, adj(graph, v)),
+        set.intersection(x, adj(graph, v)),
+      )
+
+    let found = list.append(found, rec_found)
+
+    #(r, set.delete(p, v), set.insert(x, v), found)
+  })
 }
