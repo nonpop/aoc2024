@@ -4,13 +4,20 @@ import gleam/list
 import gleam/set
 import util
 
-pub fn solve1(lines: List(String)) -> Int {
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
   parse(lines)
   |> list.map(generate(_, 2000))
   |> int.sum
+  |> util.print_int
 }
 
-pub fn solve2(lines: List(String)) -> Int {
+fn solve2(lines) {
+  // slow but <1min
+
   let seqs_to_prices =
     parse(lines)
     |> list.map(generate_prices(_, 2000, []))
@@ -28,6 +35,7 @@ pub fn solve2(lines: List(String)) -> Int {
   all_seqs
   |> list.map(seq_total_price(seqs_to_prices, _))
   |> max
+  |> util.print_int
 }
 
 fn max(xs) {

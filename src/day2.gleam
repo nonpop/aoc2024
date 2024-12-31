@@ -4,12 +4,26 @@ import gleam/order
 import gleam/string
 import util
 
-pub fn solve1(lines: List(String)) -> Int {
-  lines
-  |> list.filter(fn(s) { s != "" })
-  |> list.map(parse_line)
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
+  parse(lines)
   |> list.filter(is_safe)
   |> list.length
+  |> util.print_int
+}
+
+fn solve2(lines) {
+  parse(lines)
+  |> list.filter(is_safe2)
+  |> list.length
+  |> util.print_int
+}
+
+fn is_safe2(report) {
+  is_safe(report) || list.any(candidates([], report), is_safe)
 }
 
 fn is_safe(report) {
@@ -41,18 +55,6 @@ fn report_good(xs, order) {
   }
 }
 
-pub fn solve2(lines: List(String)) -> Int {
-  lines
-  |> list.filter(fn(s) { s != "" })
-  |> list.map(parse_line)
-  |> list.filter(is_safe2)
-  |> list.length
-}
-
-fn is_safe2(report) {
-  is_safe(report) || list.any(candidates([], report), is_safe)
-}
-
 fn candidates(init, tail) {
   case tail {
     [] -> []
@@ -61,6 +63,12 @@ fn candidates(init, tail) {
       ..candidates(list.append(init, [x]), xs)
     ]
   }
+}
+
+fn parse(lines) {
+  lines
+  |> list.filter(fn(s) { s != "" })
+  |> list.map(parse_line)
 }
 
 fn parse_line(line) {

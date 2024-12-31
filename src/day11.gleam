@@ -1,23 +1,32 @@
+import gleam/dict
 import gleam/int
 import gleam/list
+import gleam/pair
 import gleam/string
-import gleamy/map
 import util
 
-pub fn solve1(lines: List(String)) -> Int {
-  let stones = parse(lines)
-  stones
-  |> mset_from_list
-  |> blink_n(25)
-  |> mset_total_count
+pub fn main() {
+  util.run(solve1, solve2)
 }
 
-pub fn solve2(lines: List(String)) -> Int {
+fn solve1(lines) {
   let stones = parse(lines)
+
   stones
-  |> mset_from_list
+  |> multiset_from_list
+  |> blink_n(25)
+  |> multiset_total_count
+  |> util.print_int
+}
+
+fn solve2(lines) {
+  let stones = parse(lines)
+
+  stones
+  |> multiset_from_list
   |> blink_n(75)
-  |> mset_total_count
+  |> multiset_total_count
+  |> util.print_int
 }
 
 fn parse(lines) {
@@ -33,7 +42,7 @@ fn blink_n(stones, n) {
     True -> stones
     False ->
       stones
-      |> map.to_list
+      |> dict.to_list
       |> blink
       |> blink_n(n - 1)
   }
@@ -41,13 +50,13 @@ fn blink_n(stones, n) {
 
 fn blink(stones) {
   case stones {
-    [] -> map.new(int.compare)
-    [#(x, c), ..xs] if x == 0 -> blink(xs) |> mset_insert(1, c)
+    [] -> dict.new()
+    [#(x, c), ..xs] if x == 0 -> blink(xs) |> multiset_insert(1, c)
     [#(x, c), ..xs] ->
       case try_split(x) {
-        Error(Nil) -> blink(xs) |> mset_insert(x * 2024, c)
+        Error(Nil) -> blink(xs) |> multiset_insert(x * 2024, c)
         Ok(#(left, right)) ->
-          blink(xs) |> mset_insert(left, c) |> mset_insert(right, c)
+          blink(xs) |> multiset_insert(left, c) |> multiset_insert(right, c)
       }
   }
 }
@@ -68,23 +77,21 @@ fn try_split(stone) {
   }
 }
 
-fn mset_from_list(xs) {
+fn multiset_from_list(xs) {
   xs
-  |> list.fold(from: map.new(int.compare), with: fn(m, x) {
-    mset_insert(m, x, 1)
-  })
+  |> list.fold(from: dict.new(), with: fn(m, x) { multiset_insert(m, x, 1) })
 }
 
-fn mset_insert(mset, x, count) {
-  case map.get(mset, x) {
-    Error(Nil) -> map.insert(mset, x, count)
-    Ok(c) -> map.insert(mset, x, c + count)
+fn multiset_insert(multiset, x, count) {
+  case dict.get(multiset, x) {
+    Error(Nil) -> dict.insert(multiset, x, count)
+    Ok(c) -> dict.insert(multiset, x, c + count)
   }
 }
 
-fn mset_total_count(mset) {
-  mset
-  |> map.to_list
-  |> list.map(fn(p) { p.1 })
+fn multiset_total_count(multiset) {
+  multiset
+  |> dict.to_list
+  |> list.map(pair.second)
   |> int.sum
 }

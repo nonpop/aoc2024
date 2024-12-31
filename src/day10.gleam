@@ -1,18 +1,26 @@
 import gleam/list
-import gleamy/set
+import gleam/set
 import util.{type Pos, Pos}
 
-pub fn solve1(lines: List(String)) -> Int {
-  let #(m, rows, cols) = parse_input(lines)
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
+  let #(m, rows, cols) = parse(lines)
+
   sum_scores(m, rows, cols, Pos(0, 0), 0)
+  |> util.print_int
 }
 
-pub fn solve2(lines: List(String)) -> Int {
-  let #(m, rows, cols) = parse_input(lines)
+fn solve2(lines) {
+  let #(m, rows, cols) = parse(lines)
+
   sum_ratings(m, rows, cols, Pos(0, 0), 0)
+  |> util.print_int
 }
 
-fn parse_input(lines) {
+fn parse(lines) {
   let #(m, rows, cols) = util.parse_table(lines)
 
   #(util.map_table(m, util.must_string_to_int), rows, cols)
@@ -22,14 +30,14 @@ fn sum_scores(m, rows, cols, pos, acc) {
   case util.table_get(m, pos) {
     util.TableGetRowOutOfRange -> acc
     util.TableGetColOutOfRange ->
-      sum_scores(m, rows, cols, Pos(pos.row + 1, 0), acc)
+      sum_scores(m, rows, cols, util.next_row(pos), acc)
     util.TableGetOk(_) -> {
       let score =
-        peaks_from(m, rows, cols, pos, 0, set.new(util.compare_pos), [])
-        |> set.from_list(util.compare_pos)
-        |> set.count
+        peaks_from(m, rows, cols, pos, 0, set.new(), [])
+        |> set.from_list()
+        |> set.size
 
-      sum_scores(m, rows, cols, Pos(pos.row, pos.col + 1), acc + score)
+      sum_scores(m, rows, cols, util.next_col(pos), acc + score)
     }
   }
 }
@@ -41,10 +49,10 @@ fn sum_ratings(m, rows, cols, pos, acc) {
       sum_ratings(m, rows, cols, Pos(pos.row + 1, 0), acc)
     util.TableGetOk(_) -> {
       let score =
-        peaks_from(m, rows, cols, pos, 0, set.new(util.compare_pos), [])
+        peaks_from(m, rows, cols, pos, 0, set.new(), [])
         |> list.length
 
-      sum_ratings(m, rows, cols, Pos(pos.row, pos.col + 1), acc + score)
+      sum_ratings(m, rows, cols, util.next_col(pos), acc + score)
     }
   }
 }
@@ -60,10 +68,10 @@ fn peaks_from(m, rows, cols, pos, expected_pos_height, seen, acc) {
         util.TableGetOk(_) if expected_pos_height == 9 -> [pos, ..acc]
         util.TableGetOk(_) ->
           [
-            Pos(row: pos.row - 1, col: pos.col),
-            Pos(row: pos.row + 1, col: pos.col),
-            Pos(row: pos.row, col: pos.col - 1),
-            Pos(row: pos.row, col: pos.col + 1),
+            util.move(pos, util.up),
+            util.move(pos, util.down),
+            util.move(pos, util.left),
+            util.move(pos, util.right),
           ]
           |> list.flat_map(fn(new_pos) {
             peaks_from(

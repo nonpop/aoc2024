@@ -6,8 +6,13 @@ import gleam/option
 import gleam/result
 import gleam/set.{type Set}
 import gleam/string
+import util
 
-pub fn solve1(lines: List(String)) -> Int {
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
   let graph = parse(lines)
 
   nodes(graph)
@@ -23,9 +28,10 @@ pub fn solve1(lines: List(String)) -> Int {
   |> list.map(fn(s) { set.from_list([s.0, s.1, s.2]) })
   |> set.from_list
   |> set.size
+  |> util.print_int
 }
 
-pub fn solve2(lines: List(String)) -> Int {
+fn solve2(lines) {
   parse(lines)
   |> maximal_cliques
   |> list.sort(fn(a, b) { int.compare(set.size(a), set.size(b)) })
@@ -35,8 +41,6 @@ pub fn solve2(lines: List(String)) -> Int {
   |> list.sort(string.compare)
   |> string.join(with: ",")
   |> io.println
-
-  -1
 }
 
 fn parse(lines) {
@@ -50,27 +54,22 @@ fn parse(lines) {
 }
 
 type Graph {
-  Graph(nodes: Set(String), adj: Dict(String, Set(String)))
+  Graph(adj: Dict(String, Set(String)))
 }
 
 fn new_graph() {
-  Graph(nodes: set.new(), adj: dict.new())
+  Graph(adj: dict.new())
 }
 
 fn add_edge(graph, a, b) {
-  let Graph(nodes:, adj:) = graph
-
-  let nodes =
-    nodes
-    |> set.insert(a)
-    |> set.insert(b)
+  let Graph(adj:) = graph
 
   let adj =
     adj
     |> dict.upsert(a, fn(xs) { set.insert(option.unwrap(xs, set.new()), b) })
     |> dict.upsert(b, fn(xs) { set.insert(option.unwrap(xs, set.new()), a) })
 
-  Graph(nodes:, adj:)
+  Graph(adj:)
 }
 
 fn has_edge(graph: Graph, a, b) {
@@ -78,7 +77,7 @@ fn has_edge(graph: Graph, a, b) {
 }
 
 fn nodes(graph: Graph) {
-  graph.nodes
+  set.from_list(dict.keys(graph.adj))
 }
 
 fn adj(graph: Graph, node) {

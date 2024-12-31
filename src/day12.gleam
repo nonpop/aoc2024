@@ -1,20 +1,26 @@
 import gleam/int
 import gleam/list
-import gleamy/set
+import gleam/pair
+import gleam/set
 import util.{type Pos, Pos}
 
-pub fn solve1(lines: List(String)) -> Int {
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
   let #(m, _, _) = util.parse_table(lines)
-  let areas = find_areas(m, set.new(util.compare_pos), Pos(0, 0), [])
+  let areas = find_areas(m, set.new(), Pos(0, 0), [])
 
   list.zip(list.map(areas, calc_area), list.map(areas, calc_perim(m, _)))
   |> list.map(fn(p) { p.0 * p.1 })
   |> int.sum
+  |> util.print_int
 }
 
-pub fn solve2(lines: List(String)) -> Int {
+fn solve2(lines) {
   let #(m, rows, cols) = util.parse_table(lines)
-  let areas = find_areas(m, set.new(util.compare_pos), Pos(0, 0), [])
+  let areas = find_areas(m, set.new(), Pos(0, 0), [])
 
   list.zip(
     list.map(areas, calc_area),
@@ -22,20 +28,21 @@ pub fn solve2(lines: List(String)) -> Int {
   )
   |> list.map(fn(p) { p.0 * p.1 })
   |> int.sum
+  |> util.print_int
 }
 
-fn find_areas(m, seen, pos: Pos, acc) {
+fn find_areas(m, seen, pos, acc) {
   case set.contains(seen, pos) {
-    True -> find_areas(m, seen, Pos(row: pos.row, col: pos.col + 1), acc)
+    True -> find_areas(m, seen, util.next_col(pos), acc)
     False ->
       case util.table_get(m, pos) {
         util.TableGetRowOutOfRange -> acc
         util.TableGetColOutOfRange ->
-          find_areas(m, seen, Pos(row: pos.row + 1, col: 0), acc)
+          find_areas(m, seen, util.next_row(pos), acc)
         util.TableGetOk(x) -> {
-          let area = find_area(m, pos, x, set.new(util.compare_pos))
+          let area = find_area(m, pos, x, set.new())
           let seen = set.union(seen, area)
-          find_areas(m, seen, Pos(row: pos.row, col: pos.col + 1), [area, ..acc])
+          find_areas(m, seen, util.next_col(pos), [area, ..acc])
         }
       }
   }
@@ -62,7 +69,7 @@ fn find_area(m, pos, x, acc) {
 }
 
 fn calc_area(area) {
-  set.count(area)
+  set.size(area)
 }
 
 fn calc_perim(m, area) {
@@ -147,13 +154,13 @@ fn count_v_edges(params, side, pos: Pos, prev, acc) {
   }
 }
 
-fn neighbors(pos: Pos) {
-  let left = Pos(row: pos.row, col: pos.col - 1)
-  let right = Pos(row: pos.row, col: pos.col + 1)
-  let up = Pos(row: pos.row - 1, col: pos.col)
-  let down = Pos(row: pos.row + 1, col: pos.col)
-
-  [left, right, up, down]
+fn neighbors(pos) {
+  [
+    util.move(pos, util.left),
+    util.move(pos, util.right),
+    util.move(pos, util.up),
+    util.move(pos, util.down),
+  ]
 }
 
 type Side {
@@ -163,18 +170,18 @@ type Side {
   Bottom
 }
 
-fn sides_at(m, pos: Pos, x) {
+fn sides_at(m, pos, x) {
   [
-    #(Left, Pos(row: pos.row, col: pos.col - 1)),
-    #(Right, Pos(row: pos.row, col: pos.col + 1)),
-    #(Top, Pos(row: pos.row - 1, col: pos.col)),
-    #(Bottom, Pos(row: pos.row + 1, col: pos.col)),
+    #(Left, util.move(pos, util.left)),
+    #(Right, util.move(pos, util.right)),
+    #(Top, util.move(pos, util.up)),
+    #(Bottom, util.move(pos, util.down)),
   ]
   |> list.filter(fn(p) { different_type(m, p.1, x) })
-  |> list.map(fn(p) { p.0 })
+  |> list.map(pair.first)
 }
 
-fn different_type(m, pos: Pos, x) {
+fn different_type(m, pos, x) {
   case util.table_get(m, pos) {
     util.TableGetOk(y) if x == y -> False
     util.TableGetOk(_) -> True

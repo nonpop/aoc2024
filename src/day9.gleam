@@ -1,39 +1,47 @@
+import gleam/dict
 import gleam/int
 import gleam/io
 import gleam/list
+import gleam/pair
 import gleam/string
-import gleamy/map
 import util
 
-pub fn solve1(lines: List(String)) -> Int {
-  let assert [line, ..] = lines
-
-  let blocks =
-    line
-    |> string.to_graphemes
-    |> list.map(util.must_string_to_int)
-    |> to_blocks(True, 0, 0, map.new(int.compare))
-
-  blocks
-  |> compactify(0, map.count(blocks) - 1)
-  |> map.to_list
-  |> list.sort(by: fn(p1, p2) { int.compare(p1.0, p2.0) })
-  |> list.map(fn(p) { p.1 })
-  |> checksum(0, 0)
+pub fn main() {
+  util.run(solve1, solve2)
 }
 
-pub fn solve2(lines: List(String)) -> Int {
+fn solve1(lines) {
   let assert [line, ..] = lines
 
   let blocks =
     line
     |> string.to_graphemes
     |> list.map(util.must_string_to_int)
-    |> to_blocks(True, 0, 0, map.new(int.compare))
+    |> to_blocks(True, 0, 0, dict.new())
+
+  blocks
+  |> compactify(0, dict.size(blocks) - 1)
+  |> dict.to_list
+  |> list.sort(by: fn(p1, p2) { int.compare(p1.0, p2.0) })
+  |> list.map(pair.second)
+  |> checksum(0, 0)
+  |> util.print_int
+}
+
+fn solve2(lines) {
+  // slow but <2min
+
+  let assert [line, ..] = lines
+
+  let blocks =
+    line
+    |> string.to_graphemes
+    |> list.map(util.must_string_to_int)
+    |> to_blocks(True, 0, 0, dict.new())
 
   let max_file_id =
     blocks
-    |> map.to_list
+    |> dict.to_list
     |> list.filter_map(fn(b) {
       case b.1 {
         File(id) -> Ok(id)
@@ -43,11 +51,12 @@ pub fn solve2(lines: List(String)) -> Int {
     |> list.fold(from: 0, with: int.max)
 
   blocks
-  |> compactify2(max_file_id, map.count(blocks))
-  |> map.to_list
+  |> compactify2(max_file_id, dict.size(blocks))
+  |> dict.to_list
   |> list.sort(by: fn(p1, p2) { int.compare(p1.0, p2.0) })
-  |> list.map(fn(p) { p.1 })
+  |> list.map(pair.second)
   |> checksum(0, 0)
+  |> util.print_int
 }
 
 type Block {
@@ -83,7 +92,7 @@ fn to_blocks(disk_map, is_file, file_id, idx, acc) {
 fn add_item(blocks, item, idx, len) {
   case len <= 0 {
     True -> blocks
-    False -> add_item(map.insert(blocks, idx, item), item, idx + 1, len - 1)
+    False -> add_item(dict.insert(blocks, idx, item), item, idx + 1, len - 1)
   }
 }
 
@@ -91,15 +100,15 @@ fn compactify(blocks, left_idx, right_idx) {
   case left_idx >= right_idx {
     True -> blocks
     False ->
-      case map.get(blocks, left_idx), map.get(blocks, right_idx) {
+      case dict.get(blocks, left_idx), dict.get(blocks, right_idx) {
         Error(Nil), _ -> panic
         _, Error(Nil) -> panic
         Ok(_), Ok(Free) -> compactify(blocks, left_idx, right_idx - 1)
         Ok(File(_)), Ok(_) -> compactify(blocks, left_idx + 1, right_idx)
         Ok(Free), Ok(File(file_id)) ->
           blocks
-          |> map.insert(left_idx, File(file_id))
-          |> map.insert(right_idx, Free)
+          |> dict.insert(left_idx, File(file_id))
+          |> dict.insert(right_idx, Free)
           |> compactify(left_idx + 1, right_idx - 1)
       }
   }
@@ -117,7 +126,10 @@ fn compactify2(blocks, cur_file_id, end_idx) {
   case cur_file_id < 0 {
     True -> blocks
     False -> {
-      io.debug(cur_file_id)
+      case cur_file_id % 100 {
+        0 -> io.println(int.to_string(cur_file_id))
+        _ -> Nil
+      }
       let #(new_blocks, new_end_idx) =
         try_move_file(blocks, cur_file_id, end_idx)
       compactify2(new_blocks, cur_file_id - 1, new_end_idx)
@@ -141,7 +153,7 @@ fn find_file(blocks, file_id, idx) {
   case idx < 0 {
     True -> panic
     False ->
-      case map.get(blocks, idx) {
+      case dict.get(blocks, idx) {
         Error(Nil) | Ok(Free) -> find_file(blocks, file_id, idx - 1)
         Ok(File(found_id)) ->
           case found_id == file_id {
@@ -153,7 +165,7 @@ fn find_file(blocks, file_id, idx) {
 }
 
 fn collect_file(blocks, file_id, idx, len) {
-  case map.get(blocks, idx) {
+  case dict.get(blocks, idx) {
     Error(Nil) | Ok(Free) -> #(idx + 1, len)
     Ok(File(found_id)) ->
       case found_id == file_id {
@@ -167,7 +179,7 @@ fn find_free(blocks, len, idx, before_idx) {
   case idx + len > before_idx {
     True -> Error(Nil)
     False ->
-      case map.get(blocks, idx) {
+      case dict.get(blocks, idx) {
         Error(Nil) | Ok(File(_)) -> find_free(blocks, len, idx + 1, before_idx)
         Ok(Free) ->
           case verify_free(blocks, len, idx, before_idx) {
@@ -185,7 +197,7 @@ fn verify_free(blocks, len, idx, before_idx) {
       case idx >= before_idx {
         True -> False
         False ->
-          case map.get(blocks, idx) {
+          case dict.get(blocks, idx) {
             Error(Nil) | Ok(File(_)) -> False
             Ok(Free) -> verify_free(blocks, len - 1, idx + 1, before_idx)
           }
@@ -198,8 +210,8 @@ fn move_file(blocks, file_idx, free_idx, file_id, len) {
     True -> blocks
     False ->
       blocks
-      |> map.insert(free_idx, File(file_id))
-      |> map.insert(file_idx, Free)
+      |> dict.insert(free_idx, File(file_id))
+      |> dict.insert(file_idx, Free)
       |> move_file(file_idx + 1, free_idx + 1, file_id, len - 1)
   }
 }

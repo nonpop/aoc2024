@@ -1,13 +1,19 @@
 import gleam/int
 import gleam/list
+import gleam/pair
 import gleam/string
 import util
 
-pub fn solve1(lines: List(String)) -> Int {
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
   solve(lines, [Add, Mul])
 }
 
-pub fn solve2(lines: List(String)) -> Int {
+fn solve2(lines) {
+  // slow but <1min
   solve(lines, [Add, Mul, Concat])
 }
 
@@ -16,8 +22,9 @@ fn solve(lines, ops) {
   |> list.filter(fn(line) { line != "" })
   |> list.map(parse_line)
   |> list.filter(fn(eqn) { satisfiable(eqn.0, eqn.1, ops) })
-  |> list.map(fn(eqn) { eqn.0 })
+  |> list.map(pair.first)
   |> int.sum
+  |> util.print_int
 }
 
 fn parse_line(line) {

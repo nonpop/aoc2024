@@ -5,7 +5,11 @@ import gleam/option.{None, Some}
 import gleam/string
 import util
 
-pub fn solve1(lines: List(String)) -> Int {
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
   let machine = parse(lines)
 
   run(machine, [])
@@ -13,13 +17,17 @@ pub fn solve1(lines: List(String)) -> Int {
   |> list.reverse
   |> string.join(with: ",")
   |> io.println
-
-  -1
 }
 
-pub fn solve2(lines: List(String)) -> Int {
-  let machine = parse(lines)
+fn solve2(lines) {
+  // The answer was found semi-manually. Start with `xs = []` and run the program. Pick the option
+  // which gives the correct next wanted value (counting from the end), add to `xs`, and repeat. It
+  // should be possible to automate this but I messed it up and it was faster to just do it
+  // manually...
+
   let xs = [5, 3, 2, 2, 3, 5, 3, 7, 2, 7, 2, 3, 6, 0, 1, 7]
+
+  let machine = parse(lines)
   list.range(0, 7)
   |> list.map(fn(x) {
     let ra =
@@ -32,7 +40,9 @@ pub fn solve2(lines: List(String)) -> Int {
 
   io.println("want: 2,4,1,2,7,5,4,5,0,3,1,7,5,5,3,0")
 
-  xs |> list.fold(0, fn(acc, x) { int.bitwise_shift_left(acc, 3) + x })
+  xs
+  |> list.fold(0, fn(acc, x) { int.bitwise_shift_left(acc, 3) + x })
+  |> util.print_int
 }
 
 fn print_opts(opts) {

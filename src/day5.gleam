@@ -4,16 +4,21 @@ import gleam/option.{None, Some}
 import gleam/string
 import util
 
-pub fn solve1(lines: List(String)) -> Int {
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
   let #(rules, orderings) = parse(lines)
 
   orderings
   |> list.filter(in_right_order(rules, _))
   |> list.map(take_middle)
   |> int.sum
+  |> util.print_int
 }
 
-pub fn solve2(lines: List(String)) -> Int {
+fn solve2(lines) {
   let #(rules, orderings) = parse(lines)
 
   orderings
@@ -21,6 +26,7 @@ pub fn solve2(lines: List(String)) -> Int {
   |> list.map(order(rules, _))
   |> list.map(take_middle)
   |> int.sum
+  |> util.print_int
 }
 
 fn parse(lines) {

@@ -4,8 +4,13 @@ import gleam/list
 import gleam/option.{Some}
 import gleam/regexp
 import gleam/string
+import util
 
-pub fn solve1(lines: List(String)) -> Int {
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
   let #(starts, wirings, ends) = parse(lines)
 
   let states =
@@ -26,30 +31,27 @@ pub fn solve1(lines: List(String)) -> Int {
       False -> res * 2
     }
   })
+  |> util.print_int
 }
 
-pub fn solve2(lines: List(String)) -> Int {
-  // create image with `gleam run | dot -Tsvg > day24.svg`
+fn solve2(lines) {
+  // Run `gleam run -m day24 2 day24_large.txt | dot -Tsvg > day24.svg` to create a graph of the
+  // circuit.
   //
-  // Manually inspecting the graph we see that the following swaps must be made:
+  // Manually inspecting it, we see that it consists of a chain of binary full adders. It's nice and
+  // modular, and by comparing modules it's relatively easy to spot the misplaced gate pairs. The
+  // required swaps are:
   //
-  //   hnn AND dvh -> z11    <>    hnn XOR dvh -> rpv
+  //   hnn AND dvh -> z11    <>    hnn XOR dvh -> rpv 
   //   x15 XOR y15 -> rpb    <>    x15 AND y15 -> ctg
   //   x31 AND y31 -> z31    <>    fgs XOR ctw -> dmh
   //   pqr XOR hhv -> dvq    <>    trm OR bvk -> z38
   //
   // The result is therefore: ctg,dmh,dvq,rpb,rpv,z11,z31,z38
 
-  let #(xy_nodes, wirings, z_nodes) = parse(lines)
-
-  let #(x_nodes, y_nodes) =
-    xy_nodes |> dict.keys |> list.partition(string.starts_with(_, "x"))
+  let #(_, wirings, _) = parse(lines)
 
   io.println("digraph {")
-
-  list.each(x_nodes, fn(node) { io.println("  " <> node <> ";") })
-  list.each(y_nodes, fn(node) { io.println("  " <> node <> ";") })
-  list.each(z_nodes, fn(node) { io.println("  " <> node <> ";") })
 
   list.each(dict.values(wirings), fn(w: Wiring) {
     io.println(
@@ -69,7 +71,7 @@ pub fn solve2(lines: List(String)) -> Int {
 
   io.println("}")
 
-  -1
+  io.println("// solution: ctg,dmh,dvq,rpb,rpv,z11,z31,z38")
 }
 
 fn wiring_node_name(w: Wiring) {

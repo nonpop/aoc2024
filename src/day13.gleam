@@ -5,14 +5,19 @@ import gleam/option.{Some}
 import gleam/regexp
 import util
 
-pub fn solve1(lines: List(String)) -> Int {
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
   parse(lines)
   |> list.map(brute_force_smallest_cost(_, 3, 100, 1, 100))
   |> int.sum
+  |> util.print_int
 }
 
-pub fn solve2(lines: List(String)) -> Int {
-  // Computing the determinants of the button offset matrices, we see that for each machine there is
+fn solve2(lines) {
+  // Computing the determinants of the button offset matrices we see that for each machine there is
   // at most one way of pressing the buttons to get to the prize. Thus, we can just solve the linear
   // system and verify that the solution is integral.
 
@@ -26,6 +31,7 @@ pub fn solve2(lines: List(String)) -> Int {
   })
   |> list.map(solve_smallest_cost(_, 3, 1))
   |> int.sum
+  |> util.print_int
 }
 
 fn solve_smallest_cost(machine: Machine, a_cost, b_cost) {

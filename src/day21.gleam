@@ -7,7 +7,11 @@ import gleam/string
 import ref
 import util.{type Pos, Pos}
 
-pub fn solve1(lines: List(String)) -> Int {
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
   let steppers = [
     #("A", numeric_step, numeric_pos),
     #("A", directional_step, directional_pos),
@@ -23,9 +27,10 @@ pub fn solve1(lines: List(String)) -> Int {
     complexity(code, best_seq_len)
   })
   |> int.sum
+  |> util.print_int
 }
 
-pub fn solve2(lines: List(String)) -> Int {
+fn solve2(lines) {
   let steppers = [
     #("A", numeric_step, numeric_pos),
     ..list.repeat(#("A", directional_step, directional_pos), 25)
@@ -40,6 +45,7 @@ pub fn solve2(lines: List(String)) -> Int {
     complexity(code, best_seq_len)
   })
   |> int.sum
+  |> util.print_int
 }
 
 fn complexity(code, seq_len) {
@@ -107,25 +113,25 @@ fn numeric_step(from: Pos, to: Pos) {
     int.compare(from.col, to.col)
   {
     order.Lt, order.Lt -> [
-      #("v", Pos(..from, row: from.row + 1)),
-      #(">", Pos(..from, col: from.col + 1)),
+      #("v", util.move(from, util.down)),
+      #(">", util.move(from, util.right)),
     ]
-    order.Lt, order.Eq -> [#("v", Pos(..from, row: from.row + 1))]
+    order.Lt, order.Eq -> [#("v", util.move(from, util.down))]
     order.Lt, order.Gt -> [
-      #("v", Pos(..from, row: from.row + 1)),
-      #("<", Pos(..from, col: from.col - 1)),
+      #("v", util.move(from, util.down)),
+      #("<", util.move(from, util.left)),
     ]
-    order.Eq, order.Lt -> [#(">", Pos(..from, col: from.col + 1))]
+    order.Eq, order.Lt -> [#(">", util.move(from, util.right))]
     order.Eq, order.Eq -> []
-    order.Eq, order.Gt -> [#("<", Pos(..from, col: from.col - 1))]
+    order.Eq, order.Gt -> [#("<", util.move(from, util.left))]
     order.Gt, order.Lt -> [
-      #("^", Pos(..from, row: from.row - 1)),
-      #(">", Pos(..from, col: from.col + 1)),
+      #("^", util.move(from, util.up)),
+      #(">", util.move(from, util.right)),
     ]
-    order.Gt, order.Eq -> [#("^", Pos(..from, row: from.row - 1))]
+    order.Gt, order.Eq -> [#("^", util.move(from, util.up))]
     order.Gt, order.Gt -> [
-      #("^", Pos(..from, row: from.row - 1)),
-      #("<", Pos(..from, col: from.col - 1)),
+      #("^", util.move(from, util.up)),
+      #("<", util.move(from, util.left)),
     ]
   }
   maybe_next
@@ -155,25 +161,25 @@ fn directional_step(from: Pos, to: Pos) {
     int.compare(from.col, to.col)
   {
     order.Lt, order.Lt -> [
-      #("v", Pos(..from, row: from.row + 1)),
-      #(">", Pos(..from, col: from.col + 1)),
+      #("v", util.move(from, util.down)),
+      #(">", util.move(from, util.right)),
     ]
-    order.Lt, order.Eq -> [#("v", Pos(..from, row: from.row + 1))]
+    order.Lt, order.Eq -> [#("v", util.move(from, util.down))]
     order.Lt, order.Gt -> [
-      #("v", Pos(..from, row: from.row + 1)),
-      #("<", Pos(..from, col: from.col - 1)),
+      #("v", util.move(from, util.down)),
+      #("<", util.move(from, util.left)),
     ]
-    order.Eq, order.Lt -> [#(">", Pos(..from, col: from.col + 1))]
+    order.Eq, order.Lt -> [#(">", util.move(from, util.right))]
     order.Eq, order.Eq -> []
-    order.Eq, order.Gt -> [#("<", Pos(..from, col: from.col - 1))]
+    order.Eq, order.Gt -> [#("<", util.move(from, util.left))]
     order.Gt, order.Lt -> [
-      #("^", Pos(..from, row: from.row - 1)),
-      #(">", Pos(..from, col: from.col + 1)),
+      #("^", util.move(from, util.up)),
+      #(">", util.move(from, util.right)),
     ]
-    order.Gt, order.Eq -> [#("^", Pos(..from, row: from.row - 1))]
+    order.Gt, order.Eq -> [#("^", util.move(from, util.up))]
     order.Gt, order.Gt -> [
-      #("^", Pos(..from, row: from.row - 1)),
-      #("<", Pos(..from, col: from.col - 1)),
+      #("^", util.move(from, util.up)),
+      #("<", util.move(from, util.left)),
     ]
   }
   maybe_next

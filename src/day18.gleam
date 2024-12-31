@@ -1,32 +1,41 @@
+import gleam/int
 import gleam/io
 import gleam/list
+import gleam/set
 import gleam/string
-import gleamy/set
 import util.{Pos}
 
-pub fn solve1(lines: List(String)) -> Int {
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
   let size = 70
   let amount = 1024
 
   parse(lines)
   |> drop(amount)
-  |> find_shortest(size, set.new(util.compare_pos), [#(Pos(0, 0), 0)])
+  |> find_shortest(size, set.new(), [#(Pos(0, 0), 0)])
   |> util.assert_ok
+  |> util.print_int
 }
 
-pub fn solve2(lines: List(String)) -> Int {
+fn solve2(lines) {
+  // slow but <1min
+
   let size = 70
 
   parse(lines)
   |> find_blocker([], size, [#(Pos(0, 0), 0)])
   |> util.assert_ok
-  |> io.debug
-
-  -1
+  |> fn(p) { io.println(int.to_string(p.0) <> "," <> int.to_string(p.1)) }
 }
 
 fn find_blocker(bytes, dropped, size, worklist) {
-  io.debug(list.length(bytes))
+  case list.length(bytes) % 100 == 0 {
+    True -> io.println(int.to_string(list.length(bytes)))
+    False -> Nil
+  }
 
   case bytes {
     [] -> Error(Nil)
@@ -35,12 +44,7 @@ fn find_blocker(bytes, dropped, size, worklist) {
       let dropped = [Pos(row: y, col: x), ..dropped]
 
       case
-        find_shortest(
-          set.from_list(dropped, util.compare_pos),
-          size,
-          set.new(util.compare_pos),
-          [#(Pos(0, 0), 0)],
-        )
+        find_shortest(set.from_list(dropped), size, set.new(), [#(Pos(0, 0), 0)])
       {
         Ok(_) -> find_blocker(bytes, dropped, size, worklist)
         Error(Nil) -> Ok(#(x, y))
@@ -68,10 +72,10 @@ fn find_shortest(corrupted, size, seen, worklist) {
                       let seen = set.insert(seen, pos)
                       let worklist =
                         list.append(xs, [
-                          #(Pos(..pos, row: pos.row + 1), len + 1),
-                          #(Pos(..pos, row: pos.row - 1), len + 1),
-                          #(Pos(..pos, col: pos.col + 1), len + 1),
-                          #(Pos(..pos, col: pos.col - 1), len + 1),
+                          #(util.move(pos, util.down), len + 1),
+                          #(util.move(pos, util.up), len + 1),
+                          #(util.move(pos, util.right), len + 1),
+                          #(util.move(pos, util.left), len + 1),
                         ])
                       find_shortest(corrupted, size, seen, worklist)
                     }
@@ -87,7 +91,7 @@ fn drop(coords, amount) {
   coords
   |> list.take(amount)
   |> list.map(fn(p: #(Int, Int)) { Pos(row: p.1, col: p.0) })
-  |> set.from_list(util.compare_pos)
+  |> set.from_list()
 }
 
 fn parse(lines) {

@@ -1,7 +1,12 @@
 import gleam/list
 import gleam/string
+import util
 
-pub fn solve1(lines: List(String)) -> Int {
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
   let #(locks, keys) = parse(lines)
 
   let combos = {
@@ -13,10 +18,11 @@ pub fn solve1(lines: List(String)) -> Int {
   combos
   |> list.filter(fn(p) { fits(p.0, p.1) })
   |> list.length
+  |> util.print_int
 }
 
-pub fn solve2(lines: List(String)) -> Int {
-  -1
+fn solve2(_) {
+  panic as "day 25 has no part 2"
 }
 
 fn fits(lock: Lock, key: Key) {
@@ -83,16 +89,16 @@ fn count_fills(rows) {
   |> list.map(count_col_fills(_, rows))
 }
 
-fn count_col_fills(coli, rows) {
+fn count_col_fills(col, rows) {
   case rows {
     [] -> 0
     [r, ..rs] -> {
-      let first = case r |> string.drop_start(coli) |> string.first {
+      let first = case r |> string.drop_start(col) |> string.first {
         Ok("#") -> 1
         Ok(".") -> 0
         _ -> panic
       }
-      first + count_col_fills(coli, rs)
+      first + count_col_fills(col, rs)
     }
   }
 }

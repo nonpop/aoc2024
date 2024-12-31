@@ -3,10 +3,14 @@ import gleam/io
 import gleam/list
 import gleam/option.{Some}
 import gleam/regexp
-import gleamy/set
+import gleam/set
 import util.{type Pos, Pos}
 
-pub fn solve1(lines: List(String)) -> Int {
+pub fn main() {
+  util.run(solve1, solve2)
+}
+
+fn solve1(lines) {
   let #(w, h) = #(101, 103)
 
   lines
@@ -14,24 +18,26 @@ pub fn solve1(lines: List(String)) -> Int {
   |> list.map(parse_line)
   |> list.map(steps(_, w, h, 100))
   |> safety_factor(w, h)
+  |> util.print_int
 }
 
-pub fn solve2(lines: List(String)) -> Int {
+fn solve2(lines) {
+  // Examine the output manually to verify it's a tree. If no trees are found, add more steps.
+  let steps = 10_000
+
   let #(w, h) = #(101, 103)
 
   lines
   |> list.filter(fn(line) { line != "" })
   |> list.map(parse_line)
-  |> print_potential_trees(w, h, 0, 10_000)
-
-  -1
+  |> print_potential_trees(w, h, 0, steps)
 }
 
 fn print_potential_trees(robots, w, h, step, max_steps) {
   case step > max_steps {
     True -> Nil
     False -> {
-      let robots_set = robots_to_set(robots, set.new(util.compare_pos))
+      let robots_set = robots_to_set(robots, set.new())
       case step % 1000 == 0 {
         True -> {
           io.println(
@@ -63,6 +69,7 @@ fn print_potential_trees(robots, w, h, step, max_steps) {
 }
 
 fn is_potential_tree(robots, w, h, pos: Pos, threshold, found) {
+  // we classify the output as a potential tree if it has a horizontal line of `threshold` robots
   case found >= threshold {
     True -> True
     False ->
@@ -71,14 +78,7 @@ fn is_potential_tree(robots, w, h, pos: Pos, threshold, found) {
         False ->
           case pos.col >= w {
             True ->
-              is_potential_tree(
-                robots,
-                w,
-                h,
-                Pos(row: pos.row + 1, col: 0),
-                threshold,
-                0,
-              )
+              is_potential_tree(robots, w, h, util.next_row(pos), threshold, 0)
             False ->
               case set.contains(robots, pos) {
                 False ->
@@ -86,7 +86,7 @@ fn is_potential_tree(robots, w, h, pos: Pos, threshold, found) {
                     robots,
                     w,
                     h,
-                    Pos(..pos, col: pos.col + 1),
+                    util.next_col(pos),
                     threshold,
                     0,
                   )
@@ -95,7 +95,7 @@ fn is_potential_tree(robots, w, h, pos: Pos, threshold, found) {
                     robots,
                     w,
                     h,
-                    Pos(..pos, col: pos.col + 1),
+                    util.next_col(pos),
                     threshold,
                     found + 1,
                   )

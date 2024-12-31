@@ -1,17 +1,34 @@
+import argv
 import gleam/int
 import gleam/io
 import gleam/list
-import gleam/order.{type Order}
 import gleam/string
-import gleamy/map
 import glearray
+import simplifile
+
+pub fn run(solve1: fn(_) -> Nil, solve2: fn(_) -> Nil) {
+  let #(solver, filename) = case argv.load().arguments {
+    ["1", filename] -> #(solve1, filename)
+    ["2", filename] -> #(solve2, filename)
+    _ -> panic
+  }
+
+  let assert Ok(content) = simplifile.read("inputs/" <> filename)
+  let lines = string.split(content, on: "\n")
+
+  solver(lines)
+}
+
+pub fn print_int(i) {
+  i |> int.to_string |> io.println
+}
 
 pub fn assert_ok(result) {
   let assert Ok(value) = result
   value
 }
 
-pub fn must_string_to_int(s: String) -> Int {
+pub fn must_string_to_int(s) {
   s |> int.parse |> assert_ok
 }
 
@@ -55,32 +72,44 @@ pub type Pos {
   Pos(row: Int, col: Int)
 }
 
-pub fn compare_pos(a: Pos, b: Pos) -> Order {
-  case int.compare(a.row, b.row) {
-    order.Lt -> order.Lt
-    order.Gt -> order.Gt
-    order.Eq -> int.compare(a.col, b.col)
-  }
+pub fn next_col(pos: Pos) {
+  Pos(..pos, col: pos.col + 1)
 }
 
-pub type PosOfs {
-  PosOfs(drow: Int, dcol: Int)
+pub fn next_row(pos: Pos) {
+  Pos(row: pos.row + 1, col: 0)
 }
 
-pub fn move(pos: Pos, ofs: PosOfs) {
-  Pos(row: pos.row + ofs.drow, col: pos.col + ofs.dcol)
+pub type Dir {
+  Dir(drow: Int, dcol: Int)
 }
 
-pub fn map_values(m, f, compare_keys) {
-  m
-  |> map.to_list
-  |> list.map(fn(kv) { #(kv.0, f(kv)) })
-  |> map.from_list(compare_keys)
+pub const up = Dir(-1, 0)
+
+pub const down = Dir(1, 0)
+
+pub const left = Dir(0, -1)
+
+pub const right = Dir(0, 1)
+
+pub const up_left = Dir(-1, -1)
+
+pub const up_right = Dir(-1, 1)
+
+pub const down_left = Dir(1, -1)
+
+pub const down_right = Dir(1, 1)
+
+pub fn move(pos: Pos, dir: Dir) {
+  Pos(row: pos.row + dir.drow, col: pos.col + dir.dcol)
 }
 
-pub fn debug_log(x, f) {
-  io.debug(f(x))
-  x
+pub fn turn_right(dir: Dir) {
+  Dir(drow: dir.dcol, dcol: -dir.drow)
+}
+
+pub fn turn_left(dir: Dir) {
+  Dir(drow: -dir.dcol, dcol: dir.drow)
 }
 
 pub fn map_array(a, f) {
