@@ -16,7 +16,7 @@ pub fn solve1(lines: List(String)) -> Int {
 }
 
 pub fn solve2(lines: List(String)) -> Int {
-  todo
+  -1
 }
 
 fn fits(lock: Lock, key: Key) {
