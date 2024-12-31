@@ -29,11 +29,15 @@ import gleam/string
 import simplifile
 
 pub fn main() {
-  let input = "day25_large.txt"
-  let solver = day25.solve1
+  let input = "day24_large.txt"
+  let solver = day24.solve2
 
   let assert Ok(content) = simplifile.read("inputs/" <> input)
   let lines = string.split(content, on: "\n")
+  let result = solver(lines)
 
-  io.println(int.to_string(solver(lines)))
+  case result >= 0 {
+    True -> io.println(int.to_string(result))
+    False -> Nil
+  }
 }
